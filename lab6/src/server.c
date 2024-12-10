@@ -12,6 +12,7 @@
 #include <sys/types.h>
 
 #include "pthread.h"
+#include "utils.h"
 
 struct FactorialArgs {
   uint64_t begin;
@@ -19,23 +20,12 @@ struct FactorialArgs {
   uint64_t mod;
 };
 
-uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
-  uint64_t result = 0;
-  a = a % mod;
-  while (b > 0) {
-    if (b % 2 == 1)
-      result = (result + a) % mod;
-    a = (a * 2) % mod;
-    b /= 2;
-  }
-
-  return result % mod;
-}
-
 uint64_t Factorial(const struct FactorialArgs *args) {
   uint64_t ans = 1;
 
   // TODO: your code here
+  for (int i = args->begin; i < args->end; i++)
+      ans = MultModulo(ans, i, args->mod);
 
   return ans;
 }
@@ -68,10 +58,20 @@ int main(int argc, char **argv) {
       case 0:
         port = atoi(optarg);
         // TODO: your code here
+        if(port <= 0 || port > 65535)
+        {
+            printf("port must be a positive number less then 65536\n");
+            return 1;
+        }
         break;
       case 1:
         tnum = atoi(optarg);
         // TODO: your code here
+        if(tnum <= 0)
+        {
+            printf("tnum is positive numder\n");
+            return 1;
+        }
         break;
       default:
         printf("Index %d is out of options\n", option_index);
@@ -155,12 +155,15 @@ int main(int argc, char **argv) {
       memcpy(&mod, from_client + 2 * sizeof(uint64_t), sizeof(uint64_t));
 
       fprintf(stdout, "Receive: %llu %llu %llu\n", begin, end, mod);
+      if (tnum > end - begin) tnum = end - begin;
 
       struct FactorialArgs args[tnum];
-      for (uint32_t i = 0; i < tnum; i++) {
-        // TODO: parallel somehow
-        args[i].begin = 1;
-        args[i].end = 1;
+      uint64_t ars = (end - begin)/tnum;
+      uint64_t left = (end - begin)%tnum;
+      for (uint64_t i = 0; i < tnum; i++) 
+      {
+        args[i].begin = begin + ars*i + (left < i ? left : i);
+        args[i].end = begin + ars*(i+1) + (left < i+1 ? left : i+1);
         args[i].mod = mod;
 
         if (pthread_create(&threads[i], NULL, ThreadFactorial,

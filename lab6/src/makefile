@@ -1,6 +1,24 @@
-all: server.c client.c
-	gcc server.c -L. -lpthread -o server
-	gcc client.c -L. -lpthread -o client
+CC = gcc
+CFLAGS = -I. -lpthread -Wall -Wextra
 
-clean :
-	rm server client
+LIB = utils.o
+
+all: client server
+
+client: client.o $(LIB)
+	$(CC) -o client client.o $(LIB) $(CFLAGS)
+
+server: server.o $(LIB)
+	$(CC) -o server server.o $(LIB) $(CFLAGS)
+
+utils.o: utils.c utils.h
+	$(CC) -c utils.c $(CFLAGS)
+
+client.o: client.c utils.h
+	$(CC) -c client.c $(CFLAGS)
+
+server.o: server.c utils.h
+	$(CC) -c server.c $(CFLAGS)
+
+clean:
+	rm *.o client server servers.txt
